@@ -5,8 +5,8 @@ from tqdm import tqdm
 
 import arxiv
 
-from ..utils import dump_papers
-from .utils import get_query_from_keywords
+from paperscraper.utils import dump_papers
+from paperscraper.arxiv.utils import get_query_from_keywords
 
 arxiv_field_mapper = {
     "published": "date",

@@ -5,12 +5,14 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Dict
+import base64
 
 import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from slugify import slugify
 
-from .utils import load_jsonl
+from paperscraper.utils import load_jsonl
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ def save_pdf(paper_metadata: Dict[str, Any], filepath: str) -> None:
         f.write(response.content)
 
 
-def save_pdf_from_dump(dump_path: str, pdf_path: str, key_to_save: str = "doi") -> None:
+def save_pdf_from_dump(dump_path: str, pdf_path: str, key_to_save: str = "none") -> None:
     """
     Receives a path to a `.jsonl` dump with paper metadata and saves the PDF files of
     each paper.
@@ -82,13 +84,20 @@ def save_pdf_from_dump(dump_path: str, pdf_path: str, key_to_save: str = "doi") 
 
     if not isinstance(pdf_path, str):
         raise TypeError(f"pdf_path must be a string, not {type(pdf_path)}.")
+    
+    papers = load_jsonl(dump_path)
 
     if not isinstance(key_to_save, str):
         raise TypeError(f"key_to_save must be a string, not {type(key_to_save)}.")
-    if key_to_save not in ["doi", "title", "date"]:
+    if key_to_save=='none':
+        key_to_save=='author'
+        for paper in papers:
+            paper[key_to_save] = f"{paper['authors'][0]}_{paper['title']}_{paper['year']}"
+            paper[key_to_save] = slugify(paper[key_to_save])
+
+    elif key_to_save not in ["doi", "title", "date"]:
         raise ValueError("key_to_save must be one of 'doi' or 'title'.")
 
-    papers = load_jsonl(dump_path)
 
     pbar = tqdm(papers, total=len(papers), desc="Processing")
     for i, paper in enumerate(pbar):
